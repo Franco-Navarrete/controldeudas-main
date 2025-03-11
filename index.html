@@ -90,6 +90,7 @@
             background: white;
             border-radius: 8px;
             overflow: hidden;
+            display: none;
         }
 
         th,
@@ -150,7 +151,7 @@
         <!-- Registrar Pago -->
         <div class="list-container">
             <h3>💰 Registrar Pago</h3>
-            <select id="seleccionarJugador">
+            <select id="seleccionarJugador" onchange="mostrarPagosJugador()">
                 <option value="">Seleccionar jugador</option>
             </select>
             <input type="number" id="montoTotal" placeholder="Monto total" required>
@@ -167,7 +168,7 @@
         <!-- Pagos Registrados -->
         <div class="list-container">
             <h3>📋 Pagos Registrados</h3>
-            <table>
+            <table id="tablaPagos">
                 <thead>
                     <tr>
                         <th>Jugador</th>
@@ -191,7 +192,6 @@
         // Cargar los jugadores y pagos al inicio
         actualizarListaJugadores();
         actualizarSelectJugadores();
-        actualizarDetallesPagos();
 
         function agregarJugador() {
             const nombre = document.getElementById("nombreJugador").value.trim();
@@ -220,6 +220,16 @@
             jugadores.forEach(jugador => {
                 const div = document.createElement("div");
                 div.textContent = jugador;
+                const botonEliminar = document.createElement("button");
+                botonEliminar.textContent = "Eliminar";
+                botonEliminar.style.background = "#e74c3c";
+                botonEliminar.style.color = "#fff";
+                botonEliminar.style.border = "none";
+                botonEliminar.style.borderRadius = "6px";
+                botonEliminar.style.cursor = "pointer";
+                botonEliminar.onclick = () => eliminarJugador(jugador);
+
+                div.appendChild(botonEliminar);
                 lista.appendChild(div);
             });
         }
@@ -233,6 +243,17 @@
                 option.textContent = jugador;
                 select.appendChild(option);
             });
+        }
+
+        function eliminarJugador(jugador) {
+            jugadores = jugadores.filter(j => j !== jugador);
+            pagos = pagos.filter(pago => pago.jugador !== jugador); // Eliminar pagos asociados
+            localStorage.setItem('jugadores', JSON.stringify(jugadores));
+            localStorage.setItem('pagos', JSON.stringify(pagos));
+
+            actualizarListaJugadores();
+            actualizarSelectJugadores();
+            mostrarMensaje("Jugador eliminado correctamente.", "exito", "mensajeJugador");
         }
 
         function registrarPago() {
@@ -261,17 +282,27 @@
             });
             localStorage.setItem('pagos', JSON.stringify(pagos));
 
-            actualizarDetallesPagos();
             document.getElementById("montoTotal").value = "";
             document.getElementById("montoAbonado").value = "";
             document.getElementById("fechaPago").value = "";
             mostrarMensaje("Pago registrado correctamente.", "exito", "mensajePago");
+            mostrarPagosJugador(); // Actualiza la lista de pagos al registrar uno nuevo
         }
 
-        function actualizarDetallesPagos() {
-            const tablaPagos = document.getElementById("detallesPagos");
-            tablaPagos.innerHTML = "";
-            pagos.forEach((pago, index) => {
+        function mostrarPagosJugador() {
+            const jugadorSeleccionado = document.getElementById("seleccionarJugador").value;
+            const tablaPagos = document.getElementById("tablaPagos");
+
+            if (!jugadorSeleccionado) {
+                tablaPagos.style.display = "none";
+                return;
+            }
+
+            const pagosJugador = pagos.filter(pago => pago.jugador === jugadorSeleccionado);
+
+            const detallesPagos = document.getElementById("detallesPagos");
+            detallesPagos.innerHTML = "";
+            pagosJugador.forEach((pago, index) => {
                 const fila = document.createElement("tr");
 
                 const montoRestante = pago.montoTotal - pago.montoAbonado;
@@ -288,14 +319,16 @@
                     ${accionPagoCompleto}
                 `;
 
-                tablaPagos.appendChild(fila);
+                detallesPagos.appendChild(fila);
             });
+
+            tablaPagos.style.display = "table";
         }
 
         function confirmarPagoCompleto(index) {
             pagos[index].montoAbonado = pagos[index].montoTotal;
             localStorage.setItem('pagos', JSON.stringify(pagos));
-            actualizarDetallesPagos();
+            mostrarPagosJugador();
             mostrarMensaje("Pago marcado como completo.", "exito", "mensajePago");
         }
 

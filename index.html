@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Pagos - Clases de Vóley</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2980b9, #6dd5fa);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #fff;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+
+        input,
+        select,
+        button {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            width: 100%;
+            max-width: 350px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #219150, #27ae60);
+            transform: scale(1.05);
+        }
+
+        .list-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .jugadores-list div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ecf0f1;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+        }
+
+        .jugadores-list .seleccionado {
+            background-color: #3498db;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #ecf0f1;
+        }
+
+        tr:hover {
+            background: #d5dbdb;
+        }
+
+        #mensajeEstado {
+            color: green;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        #mensajePagoRestante {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        #confirmarPagoRestante {
+            background: #e74c3c;
+        }
+
+        #confirmarPagoRestante:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>🏐 Control de Pagos - Clases de Vóley 🏐</h2>
+    <div class="container">
+        <div class="list-container">
+            <h3>👤 Agregar Jugador</h3>
+            <input type="text" id="nombreJugador" placeholder="Nombre del Jugador" required>
+            <button onclick="agregarJugador()">Agregar Jugador</button>
+        </div>
+
+        <div class="list-container">
+            <h3>📝 Lista de Jugadores</h3>
+            <div id="jugadoresList" class="jugadores-list"></div>
+        </div>
+
+        <div class="list-container">
+            <h3>💰 Registrar Pago</h3>
+            <select id="seleccionarJugador">
+                <option value="">Seleccionar jugador</option>
+            </select>
+            <input type="number" id="montoTotal" placeholder="Monto total" required>
+            <input type="number" id="montoAbonado" placeholder="Monto abonado" required>
+            <select id="metodoPago">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+            </select>
+            <input type="date" id="fechaPago">
+            <button onclick="registrarPago()">Registrar Pago</button>
+            <div id="mensajeEstado"></div>
+        </div>
+
+        <div class="list-container">
+            <h3>📋 Pagos Registrados</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Jugador</th>
+                        <th>Monto Total</th>
+                        <th>Monto Abonado</th>
+                        <th>Monto Restante</th>
+                        <th>Método de Pago</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="detallesPagos"></tbody>
+            </table>
+        </div>
+
+        <div class="list-container">
+            <div id="mensajePagoRestante"></div>
+            <button id="confirmarPagoRestante" onclick="confirmarPagoRestante()">Confirmar Pago Restante</button>
+        </div>
+    </div>
+
+    <script>
+        let jugadores = [];
+        let pagos = [];
+
+        function agregarJugador() {
+            const nombre = document.getElementById("nombreJugador").value.trim();
+            if (nombre === "") {
+                alert("Por favor, ingresa un nombre válido.");
+                return;
+            }
+
+            if (jugadores.includes(nombre)) {
+                alert("Este jugador ya está registrado.");
+                return;
+            }
+
+            jugadores.push(nombre);
+            actualizarListaJugadores();
+            actualizarSelectJugadores();
+            document.getElementById("nombreJugador").value = "";
+        }
+
+        function actualizarListaJugadores() {
+            const lista = document.getElementById("jugadoresList");
+            lista.innerHTML = "";
+            jugadores.forEach(jugador => {
+                const div = document.createElement("div");
+                div.textContent = jugador;
+                div.addEventListener("click", function () {
+                    seleccionarJugador(jugador);
+                });
+                lista.appendChild(div);
+            });
+        }
+
+        function seleccionarJugador(jugador) {
+            document.getElementById("seleccionarJugador").value = jugador;
+            const divs = document.querySelectorAll(".jugadores-list div");
+            divs.forEach(div => {
+                div.classList.remove("seleccionado");
+            });
+            const selectedDiv = [...divs].find(div => div.textContent === jugador);
+            selectedDiv.classList.add("seleccionado");
+        }
+
+        function actualizarSelectJugadores() {
+            const select = document.getElementById("seleccionarJugador");
+            select.innerHTML = '<option value="">Seleccionar jugador</option>';
+            jugadores.forEach(jugador => {
+                const option = document.createElement("option");
+                option.value = jugador;
+                option.textContent = jugador;
+                select.appendChild(option);
+            });
+        }
+
+        function esMontoValido(montoTotal, montoAbonado) {
+            return montoAbonado <= montoTotal && montoAbonado >= 0;
+        }
+
+        function calcularMontoRestante(montoTotal, montoAbonado) {
+            return montoTotal - montoAbonado;
+        }
+
+        function registrarPago() {
+            const jugador = document.getElementById("seleccionarJugador").value;
+            const montoTotal = document.getElementById("montoTotal").value;
+            const montoAbonado = document.getElementById("montoAbonado").value;
+            const metodoPago = document.getElementById("metodoPago").value;
+            const fechaPago = document.getElementById("fechaPago").value;
+
+            if (!jugador || montoTotal === "" || montoAbonado === "" || fechaPago === "") {
+                alert("Por favor, completa todos los campos.");
+                return;
+            }
+
+            if (!esMontoValido(montoTotal, montoAbonado)) {
+                alert("El monto abonado no puede ser mayor que el monto total.");
+                return;
+            }
+
+            const montoRestante = calcularMontoRestante(montoTotal, montoAbonado);
+
+            const pago = {
+                jugador,
+                montoTotal: parseFloat(montoTotal).toFixed(2),
+                montoAbonado: parseFloat(montoAbonado).toFixed(2),
+                montoRestante: montoRestante.toFixed(2),
+                metodoPago,
+                fechaPago
+            };
+
+            pagos.push(pago);
+            actualizarTablaPagos();
+            mostrarMensaje("Pago registrado correctamente", "green");
+
+            document.getElementById("montoTotal").value = "";
+            document.getElementById("montoAbonado").value = "";
+            document.getElementById("fechaPago").value = "";
+        }
+
+        function actualizarTablaPagos() {
+            const tablaPagos = document.getElementById("detallesPagos");
+            tablaPagos.innerHTML = "";
+            pagos.forEach(pago => {
+                const fila = document.createElement("tr");
+
+                fila.innerHTML = `
+                    <td>${pago.jugador}</td>
+                    <td>$${pago.montoTotal}</td>
+                    <td>$${pago.montoAbonado}</td>
+                    <td>$${pago.montoRestante}</td>
+                    <td>${pago.metodoPago}</td>
+                    <td>${pago.fechaPago}</td>
+                `;
+                tablaPagos.appendChild(fila);
+            });
+
+            // Verificar pagos incompletos
+            const pagosIncompletos = pagos.filter(pago => parseFloat(pago.montoRestante) > 0);
+            if (pagosIncompletos.length > 0) {
+                mostrarMensajePagoRestante(pagosIncompletos);
+            }
+        }
+
+        function mostrarMensajePagoRestante(pagosIncompletos) {
+            const mensajePagoRestante = document.getElementById("mensajePagoRestante");
+            mensajePagoRestante.innerHTML = `Hay pagos incompletos. El total restante a pagar es: $${pagosIncompletos.reduce((total, pago) => total + parseFloat(pago.montoRestante), 0).toFixed(2)}`;
+            document.getElementById("confirmarPagoRestante").style.display = "inline-block";
+        }
+
+        function confirmarPagoRestante() {
+            const pagosIncompletos = pagos.filter(pago => parseFloat(pago.montoRestante) > 0);
+            if (pagosIncompletos.length === 0) {
+                alert("Todos los pagos están completos.");
+                return;
+            }
+
+            // Actualizar los pagos incompletos
+            pagosIncompletos.forEach(pago => {
+                pago.montoRestante = 0;
+            });
+
+            actualizarTablaPagos();
+            document.getElementById("mensajePagoRestante").innerHTML = "";
+            document.getElementById("confirmarPagoRestante").style.display = "none";
+            alert("Todos los pagos incompletos han sido confirmados.");
+        }
+
+        function mostrarMensaje(mensaje, color) {
+            const mensajeElemento = document.getElementById("mensajeEstado");
+            mensajeElemento.textContent = mensaje;
+            mensajeElemento.style.color = color;
+        }
+    </script>
+</body>
+
+</html>

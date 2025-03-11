@@ -77,12 +77,6 @@
             padding: 10px;
             border-radius: 6px;
             margin-bottom: 5px;
-            cursor: pointer;
-        }
-
-        .jugadores-list .seleccionado {
-            background-color: #3498db;
-            color: white;
         }
 
         table {
@@ -94,7 +88,8 @@
             overflow: hidden;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px;
             text-align: center;
             border-bottom: 1px solid #ddd;
@@ -113,52 +108,41 @@
             background: #d5dbdb;
         }
 
-        #mensajeEstado {
-            color: green;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        #mensajePagoRestante {
+        .mensaje-error {
             color: red;
             font-weight: bold;
-            margin-top: 10px;
         }
 
-        #confirmarPagoRestante {
-            background: #e74c3c;
+        .mensaje-exito {
+            color: green;
+            font-weight: bold;
         }
 
-        #confirmarPagoRestante:hover {
-            background: #c0392b;
+        .mensaje {
+            font-size: 14px;
+            margin: 10px 0;
         }
-
-        #detalleJugador {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
     </style>
 </head>
 
 <body>
     <h2>🏐 Control de Pagos - Clases de Vóley 🏐</h2>
     <div class="container">
+        <!-- Agregar Jugador -->
         <div class="list-container">
             <h3>👤 Agregar Jugador</h3>
             <input type="text" id="nombreJugador" placeholder="Nombre del Jugador" required>
             <button onclick="agregarJugador()">Agregar Jugador</button>
+            <div id="mensajeJugador" class="mensaje mensaje-error"></div>
         </div>
 
+        <!-- Lista de Jugadores -->
         <div class="list-container">
             <h3>📝 Lista de Jugadores</h3>
             <div id="jugadoresList" class="jugadores-list"></div>
         </div>
 
+        <!-- Registrar Pago -->
         <div class="list-container">
             <h3>💰 Registrar Pago</h3>
             <select id="seleccionarJugador">
@@ -172,49 +156,57 @@
             </select>
             <input type="date" id="fechaPago">
             <button onclick="registrarPago()">Registrar Pago</button>
-            <div id="mensajeEstado"></div>
+            <div id="mensajePago" class="mensaje mensaje-error"></div>
         </div>
 
-        <div id="detalleJugador">
-            <h3>📋 Detalle del Jugador</h3>
-            <h4 id="nombreJugadorDetalle"></h4>
+        <!-- Pagos Registrados -->
+        <div class="list-container">
+            <h3>📋 Pagos Registrados</h3>
             <table>
                 <thead>
                     <tr>
+                        <th>Jugador</th>
                         <th>Monto Total</th>
                         <th>Monto Abonado</th>
-                        <th>Monto Restante</th>
                         <th>Método de Pago</th>
                         <th>Fecha</th>
+                        <th>Restante</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="detallesPagos"></tbody>
             </table>
-            <div id="mensajePagoRestante"></div>
-            <button id="confirmarPagoRestante" onclick="confirmarPagoRestante()">Confirmar Pago Restante</button>
         </div>
     </div>
 
     <script>
-        let jugadores = [];
-        let pagos = [];
+        let jugadores = JSON.parse(localStorage.getItem('jugadores') || '[]');
+        let pagos = JSON.parse(localStorage.getItem('pagos') || '[]');
+
+        // Cargar los jugadores y pagos al inicio
+        actualizarListaJugadores();
+        actualizarSelectJugadores();
+        actualizarDetallesPagos();
 
         function agregarJugador() {
             const nombre = document.getElementById("nombreJugador").value.trim();
             if (nombre === "") {
-                alert("Por favor, ingresa un nombre válido.");
+                mostrarMensaje("Por favor, ingresa un nombre válido.", "error", "mensajeJugador");
                 return;
             }
 
             if (jugadores.includes(nombre)) {
-                alert("Este jugador ya está registrado.");
+                mostrarMensaje("Este jugador ya está registrado.", "error", "mensajeJugador");
                 return;
             }
 
             jugadores.push(nombre);
+            localStorage.setItem('jugadores', JSON.stringify(jugadores));
+
             actualizarListaJugadores();
             actualizarSelectJugadores();
             document.getElementById("nombreJugador").value = "";
+            mostrarMensaje("Jugador agregado correctamente.", "exito", "mensajeJugador");
         }
 
         function actualizarListaJugadores() {
@@ -223,9 +215,6 @@
             jugadores.forEach(jugador => {
                 const div = document.createElement("div");
                 div.textContent = jugador;
-                div.addEventListener("click", function () {
-                    mostrarDetallePagos(jugador);
-                });
                 lista.appendChild(div);
             });
         }
@@ -241,46 +230,6 @@
             });
         }
 
-        function mostrarDetallePagos(jugador) {
-            const jugadorSeleccionado = jugadores.find(j => j === jugador);
-
-            // Mostrar nombre del jugador
-            document.getElementById("nombreJugadorDetalle").textContent = `Pagos de: ${jugadorSeleccionado}`;
-            
-            // Filtra los pagos del jugador seleccionado
-            const pagosJugador = pagos.filter(pago => pago.jugador === jugadorSeleccionado);
-
-            let detallesHTML = "";
-            pagosJugador.forEach(pago => {
-                detallesHTML += `
-                    <tr>
-                        <td>$${pago.montoTotal}</td>
-                        <td>$${pago.montoAbonado}</td>
-                        <td>$${pago.montoRestante}</td>
-                        <td>${pago.metodoPago}</td>
-                        <td>${pago.fechaPago}</td>
-                    </tr>
-                `;
-            });
-
-            const tablaPagos = document.getElementById("detallesPagos");
-            tablaPagos.innerHTML = detallesHTML;
-
-            if (detallesHTML === "") {
-                alert("Este jugador no tiene pagos registrados.");
-            }
-
-            document.getElementById("detalleJugador").style.display = "block";
-        }
-
-        function esMontoValido(montoTotal, montoAbonado) {
-            return montoAbonado <= montoTotal && montoAbonado >= 0;
-        }
-
-        function calcularMontoRestante(montoTotal, montoAbonado) {
-            return montoTotal - montoAbonado;
-        }
-
         function registrarPago() {
             const jugador = document.getElementById("seleccionarJugador").value;
             const montoTotal = document.getElementById("montoTotal").value;
@@ -289,76 +238,66 @@
             const fechaPago = document.getElementById("fechaPago").value;
 
             if (!jugador || montoTotal === "" || montoAbonado === "" || fechaPago === "") {
-                alert("Por favor, completa todos los campos.");
+                mostrarMensaje("Por favor, completa todos los campos.", "error", "mensajePago");
                 return;
             }
 
-            if (!esMontoValido(montoTotal, montoAbonado)) {
-                alert("El monto abonado no puede ser mayor que el monto total.");
+            if (parseFloat(montoAbonado) > parseFloat(montoTotal)) {
+                mostrarMensaje("El monto abonado no puede ser mayor que el monto total.", "error", "mensajePago");
                 return;
             }
 
-            const montoRestante = calcularMontoRestante(montoTotal, montoAbonado);
-
-            const pago = {
+            pagos.push({
                 jugador,
-                montoTotal: parseFloat(montoTotal).toFixed(2),
-                montoAbonado: parseFloat(montoAbonado).toFixed(2),
-                montoRestante: montoRestante.toFixed(2),
+                montoTotal: parseFloat(montoTotal),
+                montoAbonado: parseFloat(montoAbonado),
                 metodoPago,
-                fechaPago
-            };
+                fechaPago: new Date(fechaPago).toLocaleDateString('es-ES')
+            });
+            localStorage.setItem('pagos', JSON.stringify(pagos));
 
-            pagos.push(pago);
-            actualizarTablaPagos();
-            mostrarMensaje("Pago registrado correctamente", "green");
-
+            actualizarDetallesPagos();
             document.getElementById("montoTotal").value = "";
             document.getElementById("montoAbonado").value = "";
             document.getElementById("fechaPago").value = "";
+            mostrarMensaje("Pago registrado correctamente.", "exito", "mensajePago");
         }
 
-        function actualizarTablaPagos() {
+        function actualizarDetallesPagos() {
             const tablaPagos = document.getElementById("detallesPagos");
             tablaPagos.innerHTML = "";
-            pagos.forEach(pago => {
+            pagos.forEach((pago, index) => {
                 const fila = document.createElement("tr");
+
+                const montoRestante = pago.montoTotal - pago.montoAbonado;
+                const filaRestante = montoRestante > 0 ? `<td style="color: red;">$${montoRestante.toFixed(2)}</td>` : `<td style="color: green;">Pago Completo</td>`;
+                const accionPagoCompleto = montoRestante > 0 ? `<td><button onclick="confirmarPagoCompleto(${index})">Confirmar Pago Completo</button></td>` : `<td></td>`;
 
                 fila.innerHTML = `
                     <td>${pago.jugador}</td>
-                    <td>$${pago.montoTotal}</td>
-                    <td>$${pago.montoAbonado}</td>
-                    <td>$${pago.montoRestante}</td>
+                    <td>$${pago.montoTotal.toFixed(2)}</td>
+                    <td>$${pago.montoAbonado.toFixed(2)}</td>
                     <td>${pago.metodoPago}</td>
                     <td>${pago.fechaPago}</td>
+                    ${filaRestante}
+                    ${accionPagoCompleto}
                 `;
+
                 tablaPagos.appendChild(fila);
             });
-
-            // Verificar pagos incompletos
-            const pagosIncompletos = pagos.filter(pago => pago.montoRestante > 0);
-            if (pagosIncompletos.length > 0) {
-                document.getElementById("mensajePagoRestante").textContent = "¡Hay pagos incompletos!";
-            } else {
-                document.getElementById("mensajePagoRestante").textContent = "Todos los pagos están completos.";
-            }
         }
 
-        function mostrarMensaje(mensaje, color) {
-            const mensajeEstado = document.getElementById("mensajeEstado");
-            mensajeEstado.textContent = mensaje;
-            mensajeEstado.style.color = color;
+        function confirmarPagoCompleto(index) {
+            pagos[index].montoAbonado = pagos[index].montoTotal;
+            localStorage.setItem('pagos', JSON.stringify(pagos));
+            actualizarDetallesPagos();
+            mostrarMensaje("Pago marcado como completo.", "exito", "mensajePago");
         }
 
-        function confirmarPagoRestante() {
-            pagos.forEach(pago => {
-                if (pago.montoRestante > 0) {
-                    pago.montoRestante = "0.00";
-                    pago.montoAbonado = pago.montoTotal;
-                }
-            });
-            actualizarTablaPagos();
-            mostrarMensaje("Todos los pagos incompletos han sido confirmados como completados.", "green");
+        function mostrarMensaje(mensaje, tipo, idMensaje) {
+            const mensajeElemento = document.getElementById(idMensaje);
+            mensajeElemento.textContent = mensaje;
+            mensajeElemento.style.color = tipo === "exito" ? "green" : "red";
         }
     </script>
 </body>

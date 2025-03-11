@@ -246,8 +246,12 @@
         }
 
         function eliminarJugador(jugador) {
+            // Eliminar jugador
             jugadores = jugadores.filter(j => j !== jugador);
-            pagos = pagos.filter(pago => pago.jugador !== jugador); // Eliminar pagos asociados
+
+            // Eliminar los pagos asociados al jugador
+            pagos = pagos.filter(pago => pago.jugador !== jugador); 
+
             localStorage.setItem('jugadores', JSON.stringify(jugadores));
             localStorage.setItem('pagos', JSON.stringify(pagos));
 
@@ -289,6 +293,13 @@
             mostrarPagosJugador(); // Actualiza la lista de pagos al registrar uno nuevo
         }
 
+        function eliminarPago(index) {
+            pagos.splice(index, 1); // Eliminar el pago
+            localStorage.setItem('pagos', JSON.stringify(pagos));
+            mostrarPagosJugador(); // Actualiza la tabla de pagos
+            mostrarMensaje("Pago eliminado correctamente.", "exito", "mensajePago");
+        }
+
         function mostrarPagosJugador() {
             const jugadorSeleccionado = document.getElementById("seleccionarJugador").value;
             const tablaPagos = document.getElementById("tablaPagos");
@@ -307,7 +318,6 @@
 
                 const montoRestante = pago.montoTotal - pago.montoAbonado;
                 const filaRestante = montoRestante > 0 ? `<td style="color: red;">$${montoRestante.toFixed(2)}</td>` : `<td style="color: green;">Pago Completo</td>`;
-                const accionPagoCompleto = montoRestante > 0 ? `<td><button onclick="confirmarPagoCompleto(${index})">Confirmar Pago Completo</button></td>` : `<td></td>`;
 
                 fila.innerHTML = `
                     <td>${pago.jugador}</td>
@@ -316,26 +326,18 @@
                     <td>${pago.metodoPago}</td>
                     <td>${pago.fechaPago}</td>
                     ${filaRestante}
-                    ${accionPagoCompleto}
+                    <td><button onclick="eliminarPago(${index})">Eliminar</button></td>
                 `;
-
                 detallesPagos.appendChild(fila);
             });
 
-            tablaPagos.style.display = "table";
+            tablaPagos.style.display = pagosJugador.length > 0 ? "table" : "none";
         }
 
-        function confirmarPagoCompleto(index) {
-            pagos[index].montoAbonado = pagos[index].montoTotal;
-            localStorage.setItem('pagos', JSON.stringify(pagos));
-            mostrarPagosJugador();
-            mostrarMensaje("Pago marcado como completo.", "exito", "mensajePago");
-        }
-
-        function mostrarMensaje(mensaje, tipo, idMensaje) {
-            const mensajeElemento = document.getElementById(idMensaje);
-            mensajeElemento.textContent = mensaje;
-            mensajeElemento.style.color = tipo === "exito" ? "green" : "red";
+        function mostrarMensaje(mensaje, tipo, elementoId) {
+            const mensajeDiv = document.getElementById(elementoId);
+            mensajeDiv.textContent = mensaje;
+            mensajeDiv.className = `mensaje mensaje-${tipo}`;
         }
     </script>
 </body>

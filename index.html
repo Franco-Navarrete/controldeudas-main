@@ -81,14 +81,49 @@
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-    .jugadores-list div {
+    .jugadores-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .jugadores-list .categoria {
+      margin-bottom: 10px;
+    }
+    .jugadores-list .categoria button {
+      width: 100%;
+      text-align: left;
+      background: #3498db;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .jugadores-list .categoria button::after {
+      content: "▼";
+      font-size: 14px;
+    }
+    .jugadores-list .categoria button.abierto::after {
+      content: "▲";
+    }
+    .jugadores-list .jugador {
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: #ecf0f1;
       padding: 10px;
       border-radius: 6px;
-      margin-bottom: 5px;
+      margin-top: 5px;
+    }
+    .jugadores-list .jugador h4 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
     }
     table {
       width: 100%;
@@ -247,20 +282,39 @@
       const categorias = ['Femenino', 'Masculino'];
       categorias.forEach(categoria => {
         const categoriaDiv = document.createElement("div");
-        categoriaDiv.innerHTML = `<h4>${categoria}</h4>`;
+        categoriaDiv.classList.add("categoria");
+        const botonCategoria = document.createElement("button");
+        botonCategoria.textContent = categoria;
+        botonCategoria.onclick = () => toggleCategoria(categoriaDiv);
+        categoriaDiv.appendChild(botonCategoria);
+
         const jugadoresPorCategoria = jugadoresFiltrados.filter(jugador => jugador.categoria === categoria);
+        const jugadoresDiv = document.createElement("div");
+        jugadoresDiv.style.display = "none"; // Inicialmente oculto
         jugadoresPorCategoria.forEach(jugador => {
           const div = document.createElement("div");
-          div.textContent = `${jugador.nombre}`;
-          const botonEliminar = document.createElement("button");
-          botonEliminar.textContent = "Eliminar";
-          botonEliminar.classList.add("eliminar");
-          botonEliminar.onclick = () => eliminarJugador(jugador);
-          div.appendChild(botonEliminar);
-          categoriaDiv.appendChild(div);
+          div.classList.add("jugador");
+          div.innerHTML = `
+            <h4>${jugador.nombre}</h4>
+            <button class="eliminar" onclick="eliminarJugador('${jugador.nombre}')">Eliminar</button>
+          `;
+          jugadoresDiv.appendChild(div);
         });
+        categoriaDiv.appendChild(jugadoresDiv);
         lista.appendChild(categoriaDiv);
       });
+    }
+
+    function toggleCategoria(categoriaDiv) {
+      const jugadoresDiv = categoriaDiv.querySelector("div");
+      const boton = categoriaDiv.querySelector("button");
+      if (jugadoresDiv.style.display === "none") {
+        jugadoresDiv.style.display = "block";
+        boton.classList.add("abierto");
+      } else {
+        jugadoresDiv.style.display = "none";
+        boton.classList.remove("abierto");
+      }
     }
 
     function actualizarSelectJugadores() {
@@ -287,8 +341,8 @@
       });
     }
 
-    function eliminarJugador(jugador) {
-      const index = jugadores.indexOf(jugador);
+    function eliminarJugador(nombre) {
+      const index = jugadores.findIndex(j => j.nombre === nombre);
       if (index !== -1) {
         jugadores.splice(index, 1);
         localStorage.setItem('jugadores', JSON.stringify(jugadores));
